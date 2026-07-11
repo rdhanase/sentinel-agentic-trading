@@ -1,0 +1,41 @@
+# Data (keep folder structure via .gitkeep, ignore contents)
+data/raw/*
+data/interim/*
+data/processed/*
+data/external/*
+!data/**/.gitkeep
+
+# Models / checkpoints
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+models_store/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Environments
+.venv/
+venv/
+env/
+.env
+*.env
+
+# Notebooks output artifacts
+reports/figures/*
+!reports/figures/.gitkeep
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

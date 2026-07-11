@@ -1,0 +1,33 @@
+# Sentinel dataset configuration
+# Edit these values to change the universe, history window, or labeling scheme.
+
+data:
+  # Liquid, well-covered names across sectors (diversifies the regime signal).
+  tickers: [SPY, QQQ, AAPL, MSFT, JPM, XOM, JNJ, NVDA, WMT, KO,
+            AMZN, GOOGL, HD, PG, UNH, CVX]
+  start: "2010-01-01"
+  end: "2024-12-31"
+  interval: "1d"
+  raw_dir: "data/raw"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
+
+features:
+  return_horizons: [1, 5, 10, 20]      # log-return lookbacks (days)
+  vol_windows: [10, 21, 63]            # realized-volatility windows (days)
+  rsi_period: 14
+  macd: [12, 26, 9]                     # fast, slow, signal
+  atr_period: 14
+  bollinger: [20, 2]                    # window, num_std
+  volume_zscore_window: 21
+
+label:
+  horizon: 5          # forward window H (days) for realized volatility
+  lookback: 252       # trailing window L (days) for the percentile threshold
+  quantile: 0.80      # high-vol if forward RV > trailing q-th percentile
+
+split:
+  # Time-ordered split boundaries (no shuffling); embargo prevents label overlap leakage.
+  train_end: "2020-12-31"
+  valid_end: "2022-12-31"
+  embargo_days: 5     # >= label horizon
