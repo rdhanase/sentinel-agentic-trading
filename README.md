@@ -90,8 +90,4 @@ Processed feature/label tables land in `data/processed/`, and EDA figures in `re
 
 ## Author
 
-Ramesh Dhanasekaran — M.S. Applied Artificial Intelligence, University of San Diego.
-
-## License
-
-Released under the MIT License. See [LICENSE](LICENSE).
+Ramesh Dhanasekaran, M.S. Applied Artificial Intelligence, University of San Diego.

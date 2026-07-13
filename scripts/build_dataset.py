@@ -1,6 +1,5 @@
-"""End-to-end dataset build: acquire -> clean -> engineer features -> label -> save.
+"""Build the modeling dataset: download, clean, add features, label, and save.
 
-Usage:
     python scripts/build_dataset.py --config config/config.yaml
 """
 from __future__ import annotations
@@ -11,7 +10,6 @@ from pathlib import Path
 
 import pandas as pd
 
-# make the package importable when run as a script
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
@@ -29,38 +27,32 @@ def main(config_path: str) -> None:
     processed_path = ROOT / cfg.data.processed_dir / "features_labeled.parquet"
     report_path = ROOT / cfg.data.interim_dir / "cleaning_report.csv"
 
-    print(f"[1/4] Acquiring {len(cfg.data.tickers)} tickers "
-          f"({cfg.data.start} -> {cfg.data.end}) ...")
+    print(f"Downloading {len(cfg.data.tickers)} tickers ({cfg.data.start} to {cfg.data.end})")
     raw = acquire(cfg.data.tickers, cfg.data.start, cfg.data.end, cfg.data.interval, save_to=raw_path)
-    print(f"      raw rows: {len(raw):,}")
+    print(f"  {len(raw):,} raw rows")
 
-    print("[2/4] Cleaning ...")
     clean, report = clean_panel(raw)
     interim_path.parent.mkdir(parents=True, exist_ok=True)
     clean.to_parquet(interim_path, index=False)
     report.to_csv(report_path, index=False)
     print(report.to_string(index=False))
 
-    print("[3/4] Engineering features + labeling per ticker ...")
     out = []
     for ticker, g in clean.groupby("ticker", sort=False):
         feats = build_features(g, cfg.features)
-        labeled = make_labels(feats, cfg.label.horizon, cfg.label.lookback, cfg.label.quantile)
-        out.append(labeled)
+        out.append(make_labels(feats, cfg.label.horizon, cfg.label.lookback, cfg.label.quantile))
     dataset = pd.concat(out, ignore_index=True)
 
-    print("[4/4] Saving processed dataset ...")
     keep = ["date", "ticker", "close", "adj_close", "volume"] + FEATURE_COLUMNS + \
            ["fwd_rvol", "vol_threshold", "label_highvol"]
     dataset = dataset[keep]
     processed_path.parent.mkdir(parents=True, exist_ok=True)
     dataset.to_parquet(processed_path, index=False)
 
-    labeled_rows = dataset["label_highvol"].notna().sum()
+    labeled = dataset["label_highvol"].notna().sum()
     pos = dataset["label_highvol"].dropna().astype(int).mean()
-    print(f"\nDone. Processed rows: {len(dataset):,} | labeled: {labeled_rows:,} "
-          f"| high-vol rate: {pos:.1%}")
-    print(f"Saved -> {processed_path.relative_to(ROOT)}")
+    print(f"\n{len(dataset):,} rows, {labeled:,} labeled, {pos:.1%} high-vol")
+    print(f"saved -> {processed_path.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

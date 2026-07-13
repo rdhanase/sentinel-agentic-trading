@@ -39,3 +39,6 @@ reports/figures/*
 .DS_Store
 .idea/
 .vscode/
+
+# Local-only learning notebook
+notebooks/03_data_and_eda.ipynb

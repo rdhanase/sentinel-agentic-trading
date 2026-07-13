@@ -1,8 +1,4 @@
-"""Configuration loading for the Sentinel dataset pipeline.
-
-Uses a small dataclass with sensible defaults so the pipeline runs even without a YAML file,
-and overlays values from ``config/config.yaml`` when present.
-"""
+"""Pipeline config: dataclass defaults, optionally overridden by config/config.yaml."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -10,8 +6,8 @@ from pathlib import Path
 from typing import List
 
 try:
-    import yaml  # optional; defaults are used if unavailable
-except Exception:  # pragma: no cover
+    import yaml
+except Exception:
     yaml = None
 
 
@@ -62,8 +58,7 @@ class Config:
         return asdict(self)
 
 
-def load_config(path: str | Path | None = "config/config.yaml") -> Config:
-    """Load configuration, overlaying YAML values on top of the defaults when available."""
+def load_config(path="config/config.yaml") -> Config:
     cfg = Config()
     if path is None or yaml is None:
         return cfg
