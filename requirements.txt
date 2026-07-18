@@ -20,10 +20,14 @@ pyyaml>=6.0
 # Testing
 pytest>=7.4
 
+# Sentiment model (M4)
+torch>=2.1
+transformers>=4.40
+datasets>=2.19
+evaluate>=0.4
+accelerate>=0.30
+
 # --- Added in later modules ---
-# torch>=2.1
-# transformers>=4.40
-# datasets>=2.19
 # xgboost>=2.0
 # langgraph>=0.2
 # alpaca-py>=0.20
