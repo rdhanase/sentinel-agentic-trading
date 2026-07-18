@@ -10,7 +10,8 @@ _TWITTER_MAP = {0: 0, 1: 2, 2: 1}
 
 
 def load_phrasebank(agreement="sentences_66agree", val_size=0.1, test_size=0.1, seed=42):
-    # Financial PhraseBank ships as one split, already coded 0=neg, 1=neu, 2=pos
+    # Financial PhraseBank ships as one split, already coded 0=neg, 1=neu, 2=pos.
+    # It is a script-based dataset, so this needs datasets < 3.0 (4.x dropped script support).
     from datasets import load_dataset, DatasetDict
     ds = load_dataset("takala/financial_phrasebank", agreement, trust_remote_code=True)["train"]
     ds = ds.rename_column("sentence", "text").rename_column("label", "labels")
