@@ -23,7 +23,7 @@ pytest>=7.4
 # Sentiment model (M4)
 torch>=2.1
 transformers>=4.40
-datasets>=2.19,<3.0   # Financial PhraseBank is script-based; datasets 4.x dropped script support
+datasets>=2.19
 evaluate>=0.4
 accelerate>=0.30
 
