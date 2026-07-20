@@ -27,7 +27,9 @@ datasets>=2.19
 evaluate>=0.4
 accelerate>=0.30
 
+# Volatility model (M5)
+xgboost>=2.0
+
 # --- Added in later modules ---
-# xgboost>=2.0
 # langgraph>=0.2
 # alpaca-py>=0.20
