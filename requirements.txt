@@ -31,5 +31,6 @@ accelerate>=0.30
 xgboost>=2.0
 
 # --- Added in later modules ---
-# langgraph>=0.2
+# Agentic pipeline (M6)
+langgraph>=0.2
 # alpaca-py>=0.20
