@@ -188,9 +188,9 @@ def halt_node(state: TradingState) -> TradingState:
 def rationale_node(state: TradingState) -> TradingState:
     """Template-based explanation of the day's call.
 
-    A production build would hand the same structured signals to an LLM (default
-    Claude ``claude-sonnet-4-6``, provider-flexible) for the narrative; we keep it
-    deterministic here so the pipeline has no API dependency.
+    A production build could hand the same structured signals to a large language
+    model for a richer narrative; we keep it deterministic here so the pipeline has
+    no external API dependency and stays reproducible.
     """
     date = pd.Timestamp(state["date"]).date() if state.get("date") else "?"
     vol = state.get("volatility", {})

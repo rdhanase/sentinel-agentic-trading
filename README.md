@@ -1,92 +1,137 @@
 # Sentinel — A Volatility-Aware Agentic Stock-Trading Assistant
 
-Sentinel is a multi-agent stock-trading assistant that combines financial-news sentiment with
+Sentinel is an agentic stock-trading assistant that combines financial-news sentiment with
 market-derived risk signals to make transparent, capital-protective decisions. Its defining feature is a
-learned **volatility circuit-breaker**: a supervised model that predicts whether the next market period
-will enter a high-volatility regime and, when it does, scales down or halts trading. The system is
-orchestrated with [LangGraph](https://langchain-ai.github.io/langgraph/) and runs in **paper-trading /
-simulation mode only**.
+learned **volatility circuit-breaker**: a supervised neural network that predicts whether the next market
+period will enter a high-volatility regime and, when it does, scales down or halts trading. The pieces are
+orchestrated with [LangGraph](https://langchain-ai.github.io/langgraph/), and the system runs in
+**paper-trading / simulation mode only**.
 
 > **Disclaimer:** This is an educational research project. It is **not financial advice**, uses no real
 > capital, and makes no claim about real-market profitability.
 
 ## Hypothesis
 
-The learned volatility circuit-breaker meaningfully reduces maximum drawdown relative to an otherwise
-identical strategy that trades without it, while news-sentiment signals add incremental directional value
-during normal market regimes.
+The learned volatility circuit-breaker reduces maximum drawdown relative to an otherwise identical
+strategy that trades without it, while news sentiment adds directional value during normal market regimes.
 
-## System at a glance
+## Headline result
 
-| Component | What it is | Status |
-|---|---|---|
-| Sentiment model | Fine-tuned **FinBERT** (HuggingFace) on Financial PhraseBank + FiQA | Planned (M4) |
-| Volatility circuit-breaker | From-scratch neural classifier (MLP → CNN-LSTM), XGBoost baseline | Planned (M5) |
-| Orchestration | LangGraph pipeline: market → sentiment → risk gate → portfolio → execution → logging | Planned (M6) |
-| Execution | Offline historical paper-simulator (Alpaca paper API is a stretch goal) | Planned (M6) |
-| **Data pipeline** | **Acquire → clean → engineer features → label volatility regimes** | **In progress (M3)** |
+Over an out-of-sample simulation (2016–2024, equal-weight long book of 16 tickers), switching the
+volatility gate on cut the worst drawdown from **-31% to -22%** and raised the Sharpe ratio from
+**1.11 to 1.23**, while barely changing average exposure. The gate acts on only about 4% of trading days,
+the riskiest ones. The from-scratch neural network reached a walk-forward PR-AUC of 0.44 against a base
+rate of 0.21, edging out a tuned XGBoost baseline, and the fine-tuned FinBERT sentiment model reached 0.91
+accuracy and 0.90 macro-F1 on held-out financial sentences.
 
-## Repository structure
+## System overview
 
-```
-sentinel/
-├── config/               # Project configuration (tickers, date ranges, label params)
-├── data/
-│   ├── raw/              # Immutable downloaded data (git-ignored)
-│   ├── interim/          # Cleaned intermediate data
-│   ├── processed/        # Model-ready feature/label tables
-│   └── external/         # Third-party datasets (e.g., Financial PhraseBank)
-├── notebooks/            # EDA and reporting notebooks
-├── scripts/              # Pipeline entry points (build_dataset.py, ...)
-├── src/sentinel/
-│   ├── data/             # acquire.py, clean.py
-│   ├── features/         # technical.py (indicators), labeling.py (volatility target)
-│   ├── eda/              # plotting / EDA helpers
-│   ├── models/           # sentiment/ and volatility/ (M4–M5)
-│   ├── agents/           # LangGraph nodes (M6)
-│   ├── sim/              # paper-trading simulator (M6)
-│   └── utils/            # config loader, helpers
-├── tests/                # unit tests (features, labeling)
-├── reports/figures/      # generated figures
-└── docs/                 # data dictionary, interview prep, notes
-```
+| Component | What it is |
+|---|---|
+| Sentiment model | Fine-tuned **FinBERT** on the Financial PhraseBank (HuggingFace Transformers) |
+| Volatility circuit-breaker | From-scratch **PyTorch MLP** (focal loss) with an **XGBoost** baseline |
+| Orchestration | **LangGraph** graph: market → sentiment → risk gate → portfolio → execution → rationale |
+| Execution | Offline historical **paper-trading simulator** (deterministic, no real orders) |
 
-## Data
+The circuit-breaker sits in the graph as a conditional edge: when a high-volatility regime is predicted,
+the flow routes to a halt/scale branch instead of the normal trading path.
 
-- **Market data:** daily OHLCV for a basket of liquid S&P 500 names via
-  [`yfinance`](https://pypi.org/project/yfinance/) (Yahoo Finance), with [Stooq](https://stooq.com) as a
-  fallback, plus a public Kaggle 1-minute SPY dataset for intraday experiments.
-- **News text (M4):** [Financial PhraseBank](https://huggingface.co/datasets/takala/financial_phrasebank)
-  and FiQA for fine-tuning the sentiment model.
+## Repository contents
 
-Raw prices are non-stationary, so the model consumes engineered, stationary features (log returns, RSI,
-MACD, ATR, Bollinger Band width, rolling realized volatility, normalized volume). The prediction target is
-a binary **high-volatility regime** label: 1 when forward realized volatility exceeds a trailing
-percentile threshold, 0 otherwise, built with purge/embargo to avoid look-ahead bias.
+Code is organized as a small Python package (`src/sentinel/`) with thin scripts and notebooks that call
+into it. The required project components map to the files below.
+
+### Data cleaning
+| File | Description |
+|---|---|
+| `src/sentinel/data/acquire.py` | Downloads daily OHLCV from Yahoo Finance (yfinance) with a Stooq fallback. |
+| `src/sentinel/data/clean.py` | Fixes duplicate dates, bad/zero prices, inverted bars, and missing values; returns a per-ticker issue report. |
+| `scripts/build_dataset.py` | End-to-end dataset build: acquire → clean → features → labels → saved parquet. |
+
+### Feature engineering and labeling
+| File | Description |
+|---|---|
+| `src/sentinel/features/technical.py` | Stationary technical indicators (returns, realized volatility, RSI, MACD, ATR, Bollinger width, volume z-score). |
+| `src/sentinel/features/labeling.py` | Forward high-volatility label vs a trailing percentile threshold, plus leakage-safe time splits with an embargo. |
+| `config/config.yaml` | Tickers, date range, feature windows, and labeling parameters. |
+| `docs/data_dictionary.md` | Plain-language description of every column in the processed dataset. |
+
+### Exploratory data analysis
+| File | Description |
+|---|---|
+| `src/sentinel/eda/plots.py` | Class balance, correlation matrix, feature-by-regime distributions, and an ADF stationarity report. |
+| `scripts/run_eda.py` | Runs the EDA and writes figures to `reports/figures/`. |
+
+### Model design, building, and training
+| File | Description |
+|---|---|
+| `src/sentinel/models/sentiment/data.py` | Loads the Financial PhraseBank and a Twitter out-of-distribution set. |
+| `src/sentinel/models/sentiment/finetune.py` | Fine-tunes FinBERT for three-way sentiment (HuggingFace Trainer). |
+| `src/sentinel/models/sentiment/infer.py` | `SentimentScorer` and the directional sentiment score used downstream. |
+| `src/sentinel/models/volatility/mlp.py` | The from-scratch feed-forward classifier (the required deep-learning model). |
+| `src/sentinel/models/volatility/losses.py` | Focal loss, for the rare high-volatility class. |
+| `src/sentinel/models/volatility/xgb.py` | Gradient-boosted-tree baseline. |
+| `src/sentinel/models/volatility/data.py` | Chronological splits with train-only feature scaling. |
+
+### Model optimization and evaluation
+| File | Description |
+|---|---|
+| `src/sentinel/models/volatility/walk_forward.py` | Walk-forward retraining, the evaluation that suits non-stationary market data. |
+| `src/sentinel/models/volatility/evaluate.py` | Imbalanced-aware metrics (PR-AUC) and precision-targeted / max-F1 threshold selection. |
+| `scripts/train_volatility.py` | Trains the MLP and XGBoost on a single split and compares them. |
+| `scripts/walk_forward_volatility.py` | Walk-forward comparison of the MLP and XGBoost, with per-year breakdown. |
+
+### Agentic pipeline and analysis
+| File | Description |
+|---|---|
+| `src/sentinel/agents/state.py` | The shared `TradingState` passed between nodes. |
+| `src/sentinel/agents/nodes.py` | The decision nodes (market, sentiment, risk gate, portfolio, execution, halt, rationale). |
+| `src/sentinel/agents/graph.py` | Assembles the nodes into the gated LangGraph flow; `run_day` and `run_backtest`. |
+| `src/sentinel/sim/backtest.py` | Offline paper-trading simulator and portfolio metrics. |
+| `scripts/save_volatility_oos.py` | Saves the walk-forward out-of-sample predictions the agent and simulator consume. |
+| `scripts/run_ablation.py` | The gate-on vs gate-off ablation and its figures. |
+
+### Notebooks and tests
+| File | Description |
+|---|---|
+| `notebooks/main_pipeline.ipynb` | Runs the data build and EDA end to end through the package. |
+| `notebooks/sentiment_finbert.ipynb` | Fine-tunes and evaluates FinBERT (executed on a GPU; outputs included). |
+| `tests/` | Unit tests for features, labeling, sentiment, the volatility model, the backtest, and the agent. |
+| `.github/workflows/ci.yml` | Continuous integration: runs the test suite on push. |
 
 ## Quickstart
 
 ```bash
-# 1. Create an environment and install dependencies
+# 1. Environment
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# 2. Build the dataset (download → clean → features → labels)
+# 2. Build the dataset (download -> clean -> features -> labels)
 python scripts/build_dataset.py --config config/config.yaml
 
-# 3. Run the tests
+# 3. Exploratory analysis
+python scripts/run_eda.py
+
+# 4. Volatility model: walk-forward comparison (MLP vs XGBoost)
+python scripts/walk_forward_volatility.py
+
+# 5. Save out-of-sample predictions, then run the gate-on/off ablation
+python scripts/save_volatility_oos.py
+python scripts/run_ablation.py
+
+# Tests
 pytest -q
 ```
 
-Processed feature/label tables land in `data/processed/`, and EDA figures in `reports/figures/`.
+The FinBERT fine-tuning runs on a GPU and is intended for Colab; see
+`notebooks/sentiment_finbert.ipynb`.
 
-## Roadmap (AAI-590, Summer 2026 B)
+## Notes
 
-- **M3 (current):** data acquisition, cleaning, feature engineering, volatility labeling, EDA.
-- **M4:** fine-tune FinBERT for financial-news sentiment.
-- **M5:** train the volatility circuit-breaker (MLP/CNN-LSTM) vs. an XGBoost baseline.
-- **M6:** wire the LangGraph agentic pipeline; run the gate-on vs gate-off ablation in the paper-simulator.
-- **M7:** finalize report, repository, and recorded presentation.
+- Large artifacts (raw/processed data, model checkpoints) are git-ignored; the pipeline regenerates them.
+- In the historical backtest the sentiment signal is held neutral because there is no per-day news feed
+  aligned to the price history; the live sentiment path is exercised in single-day demonstrations. Wiring
+  a historical news feed into the backtest is the main planned extension.
 
 ## Author
 
