@@ -54,6 +54,7 @@ into it. The required project components map to the files below.
 | `src/sentinel/features/technical.py` | Stationary technical indicators (returns, realized volatility, RSI, MACD, ATR, Bollinger width, volume z-score). |
 | `src/sentinel/features/labeling.py` | Forward high-volatility label vs a trailing percentile threshold, plus leakage-safe time splits with an embargo. |
 | `config/config.yaml` | Tickers, date range, feature windows, and labeling parameters. |
+| `src/sentinel/utils/config.py` | Loads `config.yaml` into typed defaults used across the pipeline. |
 | `docs/data_dictionary.md` | Plain-language description of every column in the processed dataset. |
 
 ### Exploratory data analysis
@@ -94,10 +95,21 @@ into it. The required project components map to the files below.
 ### Notebooks and tests
 | File | Description |
 |---|---|
-| `notebooks/main_pipeline.ipynb` | Runs the data build and EDA end to end through the package. |
+| `notebooks/main_pipeline.ipynb` | Runs the whole project end to end (data, EDA, volatility model, agent, ablation). |
 | `notebooks/sentiment_finbert.ipynb` | Fine-tunes and evaluates FinBERT (executed on a GPU; outputs included). |
-| `tests/` | Unit tests for features, labeling, sentiment, the volatility model, the backtest, and the agent. |
+| `tests/test_features.py`, `tests/test_labeling.py` | Tests for the technical indicators and the volatility labeling/splits. |
+| `tests/test_sentiment.py`, `tests/test_volatility.py` | Tests for the sentiment scoring and the volatility model/metrics. |
+| `tests/test_backtest.py`, `tests/test_agents.py` | Tests for the paper-trading simulator and the LangGraph agent. |
 | `.github/workflows/ci.yml` | Continuous integration: runs the test suite on push. |
+
+### Supporting files
+| File | Description |
+|---|---|
+| `requirements.txt` | Python dependencies for the whole project. |
+| `.gitignore` | Excludes data, model checkpoints, and generated artifacts from version control. |
+| `reports/notebook_pdfs/` | PDF exports of the two notebooks. |
+| `reports/adf_report.csv` | Saved stationarity-test results from the EDA. |
+| `reports/figures/` | Generated figures (git-ignored; produced by the EDA and ablation scripts). |
 
 ## Quickstart
 
