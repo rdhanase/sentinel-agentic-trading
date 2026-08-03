@@ -145,6 +145,14 @@ The FinBERT fine-tuning runs on a GPU and is intended for Colab; see
   aligned to the price history; the live sentiment path is exercised in single-day demonstrations. Wiring
   a historical news feed into the backtest is the main planned extension.
 
+## Use of AI Tools
+
+Generative AI tools (Anthropic Claude, via the Claude Code assistant) were used to help scaffold,
+comment, and refactor parts of this codebase and to draft project documentation. All AI-assisted output
+was reviewed, executed, tested, and revised by the author, who takes full responsibility for the final
+code and results. No data or experimental results were fabricated; every reported metric is produced by
+the code in this repository.
+
 ## Author
 
 Ramesh Dhanasekaran, M.S. Applied Artificial Intelligence, University of San Diego.
